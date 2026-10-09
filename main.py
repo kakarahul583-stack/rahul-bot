@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Main Rahul Bot hu 🎵\n/play <gaana> - Gaana bhejunga\nEx: /play kesariya")
+    await update.message.reply_text("👋 Main Rahul Bot hu \n/play <gaana> - Gaana bhejunga\nEx: /play kesariya")
 
 async def play(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
@@ -21,15 +21,24 @@ async def play(update: Update, context: ContextTypes.DEFAULT_TYPE):
         video = search.result()['result'][0]
         title=video['title']; link=video['link']
         await msg.edit_text(f"⬇️ '{title}' download...")
-        ydl_opts={'format':'bestaudio/best','outtmpl':'/tmp/%(title)s.%(ext)s','postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'192',}],'quiet':True,'noplaylist':True,}
+
         def download():
+            ydl_opts={
+                'format': 'bestaudio/best',
+                'outtmpl': f"/tmp/%(title)s.%(ext)s",
+                'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': '128'}],
+                'extractor_args': {'youtube': {'player_client': ['android','web']}},
+                'quiet': True,
+                'noplaylist': True
+            }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(link, download=True)
                 fname = ydl.prepare_filename(info)
                 return fname.rsplit('.',1)[0]+".mp3"
+
         mp3_file = await asyncio.to_thread(download)
         await msg.edit_text(f"📤 Bhej raha hu...")
-        with open(mp3_file,'rb') as f:
+        with open(mp3_file, 'rb') as f:
             await update.message.reply_audio(audio=f, title=title[:64], caption=f"🎵 {title}\n{link}")
         os.remove(mp3_file)
         await msg.delete()
